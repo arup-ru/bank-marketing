@@ -1,1 +1,2 @@
 bankFull <- as.data.frame(read.csv("C:/Users/arup.roy/Downloads/bank_full.csv", header = T,sep=';'))
+summary(bankFull)
