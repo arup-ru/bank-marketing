@@ -1,0 +1,62 @@
+install.packages("VIM")
+install.packages("mice")
+install.packages("caret")
+install.packages("ROCR")
+install.packages("randomForest")
+
+
+# original dataset in bankA
+# working dataset  in bankB (unknown <- NA; age <- age_group)
+# age_group added  in bankC (22nd Column: age_group)
+
+
+
+
+#########################                        #########################
+          #####           Bank marketing DATASET               #####
+#########################                        #########################
+
+
+
+
+# Load Data in Data Frame
+bankA <- as.data.frame(read.csv("C:/Users/Admin/Documents/bank/bankAdd.csv", sep= ";",header = T))
+
+# Display the variables and first 10 records
+str(bankA)
+head(bankA,10)
+
+
+# Replace all 'unknown' values with NA
+bankB<-bankA
+bankB[bankB=="unknown"]<-NA
+
+summary(bankB$age)
+#Min 17 #Max 98 #Mean 40 #Median 38
+
+
+# Dividing the People into Different Age Groups
+for(i in 1 : nrow(bankB)){
+  if (bankB$age[i] <= 19){bankB$age_group[i] = 'Teenagers'} 
+  else if (bankB$age[i] >= 20 & bankB$age[i] <= 29){bankB$age_group[i] = 'Twenties'} 
+  else if (bankB$age[i] >= 30 & bankB$age[i] <= 39){bankB$age_group[i] = 'Thirties'} 
+  else if (bankB$age[i] >= 40 & bankB$age[i] <= 49){bankB$age_group[i] = 'Forties'}
+  else if (bankB$age[i] >= 50 & bankB$age[i] <= 59){bankB$age_group[i] = 'Fifties'}
+  else if (bankB$age[i] >= 60 & bankB$age[i] <= 69){bankB$age_group[i] = 'Sixties'}
+  else if (bankB$age[i] >= 70 ){bankB$age_group[i] = 'Seniors'}
+}
+
+# saving the data before replacing age_group with age
+bankC<-bankB 
+
+bankB$age<-bankB$age_group
+bankB<-bankB[1:21]
+bankB$age<-as.factor(bankB$age)
+
+
+# Separating New Customers from the Old ones
+oldCust <- subset(bankB, bankB$poutcome != "nonexistent") 
+summary(oldCust) #05625 Old Customers
+
+newCust <- subset(bankB, bankB$poutcome == "nonexistent") 
+summary(newCust) #35563 New Customers
