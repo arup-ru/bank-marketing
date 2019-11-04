@@ -1,8 +1,13 @@
+
+#########################   "Analysis of a Portugese Bank Marketing Dataset"   #########################
+
+install.packages("ISwR")
 install.packages("VIM")
 install.packages("mice")
 install.packages("caret")
 install.packages("ROCR")
 install.packages("randomForest")
+install.packages("party")
 
 
 # original dataset in bankA
@@ -11,16 +16,15 @@ install.packages("randomForest")
 
 
 
-
 #########################                        #########################
           #####           Bank marketing DATASET               #####
 #########################                        #########################
 
 
-
+library(ISwR)
 
 # Load Data in Data Frame
-bankA <- as.data.frame(read.csv("C:/Users/Admin/Documents/bank/bankAdd.csv", sep= ";",header = T))
+bankA <- as.data.frame(read.csv("C:/Users/arup.roy/Documents/bank-marketing-master/bankAdd.csv", sep= ";",header = T))
 
 # Display the variables and first 10 records
 str(bankA)
@@ -56,19 +60,18 @@ bankB$age<-as.factor(bankB$age)
 
 # Separating New Customers from the Old ones
 oldCust <- subset(bankB, bankB$poutcome != "nonexistent") 
-summary(oldCust) #05625 Old Customers
+summary(oldCust) 
+#05625 Old Customers
 
 newCust <- subset(bankB, bankB$poutcome == "nonexistent") 
-summary(newCust) #35563 New Customers
-
+summary(newCust) 
+#35563 New Customers
 
 
 
 #########################                       #########################
             #####         Old Customer DATASET          #####
 #########################                       #########################
-
-
 
 
 # Missing value Frequencies
@@ -106,10 +109,9 @@ oldCust_train <- oldCust_com[ids==1,]
 oldCust_test  <- oldCust_com[ids==2,]
 
 
-table(oldCust_train$y)
-#no 2886 #yes 1027
-table(oldCust_test$y)
-#no 1240 #yes 472
+table(oldCust_train$y) #no 2886 #yes 1027
+table(oldCust_test$y)  #no 1240 #yes 472
+
 
 
 #########################   Logistic Model (oldCust)   #########################
@@ -123,7 +125,7 @@ oldCust_logitResult <- ifelse(oldCust_logitResult >= 0.5,1,0)
 oldCust_logitError  <- mean(oldCust_logitResult != oldCust_test$y)
 
 print(paste('Accuracy for Logistic Model (oldCust)',1-oldCust_logitError))
-#"Accuracy for Logistic Model (oldCust) 0.84053738317757"
+#Accuracy = 84.29%
 
 library(ROCR)
 
@@ -135,7 +137,8 @@ oldCust_logitAUC <- performance(oldCust_logitPred, measure = "auc")
 oldCust_logitAUC <- oldCust_logitAUC@y.values[[1]]
 
 print(paste('Area under the Curve for Logistic Model (oldCust)',oldCust_logitAUC))
-#"Area under the Curve for Logistic Model (oldCust) 0.784287862219792"
+#Area under Curve = 78.43%
+
 
 
 #########################   Random Forest Model (oldCust)   #########################
@@ -149,7 +152,7 @@ oldCust_rfResult <- predict(oldCust_rf, oldCust_test)
 oldCust_rfError  <- mean(oldCust_rfResult != oldCust_test$y)
 
 print(paste('Accuracy for Random Forest Model (oldCust)',1-oldCust_rfError))
-#"Accuracy for Random Forest Model (oldCust) 0.851051401869159"
+#Accuracy = 85.05%
 
 library(ROCR)
 
@@ -161,26 +164,54 @@ oldCust_rfAUC <- performance(oldCust_rfPred, measure = "auc")
 oldCust_rfAUC <- oldCust_rfAUC@y.values[[1]]
 
 print(paste('Area under the Curve for Random Forest Model (oldCust)',oldCust_rfAUC))
-#"Area under the Curve for Random Forest Model (oldCust) 0.805323947512302"
+#Area under Curve = 80.23%
+
+
+
+#########################   Tree Model (oldCust)   #########################
+
+
+library(party)
+
+oldCust_tree<-ctree(y ~.,data = oldCust_train)
+plot(oldCust_tree)
+
+oldCust_treeResult <- predict(oldCust_tree, oldCust_test)
+oldCust_treeError  <- mean(oldCust_treeResult != oldCust_test$y)
+
+print(paste('Accuracy for Tree Model (oldCust)',1-oldCust_treeError))
+#Accuracy = 84.23%
+
+library(ROCR)
+
+oldCust_treePred <- prediction(as.numeric(oldCust_treeResult), as.numeric(oldCust_test$y))
+oldCust_treePerf <- performance(oldCust_treePred, measure = "tpr", x.measure = "fpr")
+plot(oldCust_treePerf)
+
+oldCust_treeAUC <- performance(oldCust_treePred, measure = "auc")
+oldCust_treeAUC <- oldCust_treeAUC@y.values[[1]]
+print(paste('Area under the Curve for Tree Model (oldCust)',oldCust_treeAUC))
+#Area under Curve = 77.04%
+
 
 
 
 
 #########################                      #########################
             #####         New Customer DATASET          #####
-#########################                       #########################
-
-
+#########################                      #########################
 
 
 # Since they are the new customers, it does not make sense to know 
 # their outcome from the previous campaign, 
 # number of previous contacts, 
-# amount of day passed from their last contact
+# amount of day passed from their last contact and 
+# their default credit with the bank
 
 newCust$poutcome <-NULL
 newCust$previous <-NULL
 newCust$pdays    <-NULL
+newCust$default  <-NULL
 
 
 # Missing value Frequencies
@@ -217,10 +248,12 @@ id <- sample(seq(1, 2), size = nrow(newCust_com), replace = TRUE, prob = c(.7, .
 newCust_train <- newCust_com[id==1,]
 newCust_test  <- newCust_com[id==2,]
 
-table(newCust_train$y)
-#no 22754 #yes 2197
-table(newCust_test$y)
-#no 9668 #yes 944
+table(newCust_train$y) #no 22745 #yes 2191
+table(newCust_test$y)  #no 9677  #yes 950
+
+newCust_trains<- newCust_train 
+# saving train data before making the model
+
 
 
 #########################   Logistic Model (newCust)   #########################
@@ -234,7 +267,7 @@ newCust_logitResult <- ifelse(newCust_logitResult >= 0.5,1,0)
 newCust_logitError  <- mean(newCust_logitResult != newCust_test$y)
 
 print(paste('Accuracy for Logistic Model (newCust)',1-newCust_logitError))
-#"Accuracy for Logistic Model (newCust) 0.869770071617037"
+#Accuracy = 92.01%
 
 library(ROCR)
 
@@ -246,7 +279,8 @@ newCust_logitAUC <- performance(newCust_logitPred, measure = "auc")
 newCust_logitAUC <- newCust_logitAUC@y.values[[1]]
 
 print(paste('Area under the Curve for Logistic Model (newCust)',newCust_logitAUC))
-#"Area under the Curve for Logistic Model (newCust) 0.860181105937463"
+#Area under Curve = 64.99%
+
 
 
 #########################   Random Forest Model (newCust)   #########################
@@ -260,7 +294,7 @@ newCust_rfResult <- predict(newCust_rf, newCust_test)
 newCust_rfError  <- mean(newCust_rfResult != newCust_test$y)
 
 print(paste('Accuracy for Random Forest Model (newCust)',1-newCust_rfError))
-#"Accuracy for Random Forest Model (newCust) 0.878627968337731"
+#Accuracy = 91.85%
 
 library(ROCR)
 
@@ -272,6 +306,32 @@ newCust_rfAUC <- performance(newCust_rfPred, measure = "auc")
 newCust_rfAUC <- newCust_rfAUC@y.values[[1]]
 
 print(paste('Area under the Curve for Random Forest Model (newCust)',newCust_rfAUC))
-#"Area under the Curve for Random Forest Model (newCust) 0.894675033133945"
+#Area under Curve = 70.04%
 
+
+
+#########################   Tree Model (newCust)   #########################
+
+
+library(party)
+
+newCust_tree<-ctree(y ~.,data = newCust_train)
+plot(newCust_tree)
+
+newCust_treeResult <- predict(newCust_tree, newCust_test)
+newCust_treeError  <- mean(newCust_treeResult != newCust_test$y)
+
+print(paste('Accuracy for Tree Model (newCust)',1-newCust_treeError))
+#Accuracy = 92.11%
+
+library(ROCR)
+
+newCust_treePred <- prediction(as.numeric(newCust_treeResult), as.numeric(newCust_test$y))
+newCust_treePerf <- performance(newCust_treePred, measure = "tpr", x.measure = "fpr")
+plot(newCust_treePerf)
+
+newCust_treeAUC <- performance(newCust_treePred, measure = "auc")
+newCust_treeAUC <- newCust_treeAUC@y.values[[1]]
+print(paste('Area under the Curve for Tree Model (newCust)',newCust_treeAUC))
+#Area under Curve = 76.54%
 
