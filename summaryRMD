@@ -335,3 +335,48 @@ newCust_treeAUC <- newCust_treeAUC@y.values[[1]]
 print(paste('Area under the Curve for Tree Model (newCust)',newCust_treeAUC))
 #Area under Curve = 76.54%
 
+#########################              #########################              #########################              #########################              #########################
+                         ##############                         ##############                         ##############                         ##############
+#########################              #########################              #########################              #########################              #########################
+
+install.packages("e1071")
+library(e1071)
+
+newCust_nb<-naiveBayes(y ~.,data = newCust_train)
+newCust_nbResult <- predict(newCust_nb, newCust_test)
+newCust_nbError  <- mean(newCust_nbResult != newCust_test$y)
+print(paste('Accuracy for Naive Bayes Model (newCust)',1-newCust_nbError))
+#Accuracy = 78.09%
+
+library(ROCR)
+
+newCust_nbPred <- prediction(as.numeric(newCust_nbResult), as.numeric(newCust_test$y))
+newCust_nbPerf <- performance(newCust_nbPred, measure = "tpr", x.measure = "fpr")
+plot(newCust_nbPerf)
+newCust_nbAUC <- performance(newCust_nbPred, measure = "auc")
+newCust_nbAUC <- newCust_nbAUC@y.values[[1]]
+print(paste('Area under the Curve for Naive Bayes Model (newCust)',newCust_nbAUC))
+#Area under Curve = 76.07%
+
+library(e1071)
+
+oldCust_nb<-naiveBayes(y ~.,data = oldCust_train)
+oldCust_nbResult <- predict(oldCust_nb, oldCust_test)
+oldCust_nbError  <- mean(oldCust_nbResult != oldCust_test$y)
+print(paste('Accuracy for Naive Bayes Model (oldCust)',1-oldCust_nbError))
+#Accuracy = 78.56%
+
+library(ROCR)
+
+oldCust_nbPred <- prediction(as.numeric(oldCust_nbResult), as.numeric(oldCust_test$y))
+oldCust_nbPerf <- performance(oldCust_nbPred, measure = "tpr", x.measure = "fpr")
+plot(oldCust_nbPerf)
+oldCust_nbAUC <- performance(oldCust_nbPred, measure = "auc")
+oldCust_nbAUC <- oldCust_nbAUC@y.values[[1]]
+print(paste('Area under the Curve for Naive Bayes Model (oldCust)',oldCust_nbAUC))
+#Area under Curve = 79.03%
+
+
+#########################              #########################              #########################              #########################              #########################
+                        ##############                         ##############                         ##############                         ##############
+#########################              #########################              #########################              #########################              #########################
