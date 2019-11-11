@@ -8,6 +8,8 @@ install.packages("caret")
 install.packages("ROCR")
 install.packages("randomForest")
 install.packages("party")
+install.packages("e1071")
+install.packages("graphics")
 
 
 # original dataset in bankA
@@ -41,13 +43,13 @@ summary(bankB$age)
 
 # Dividing the People into Different Age Groups
 for(i in 1 : nrow(bankB)){
-  if (bankB$age[i] <= 19){bankB$age_group[i] = 'Teenagers'} 
-  else if (bankB$age[i] >= 20 & bankB$age[i] <= 29){bankB$age_group[i] = 'Twenties'} 
-  else if (bankB$age[i] >= 30 & bankB$age[i] <= 39){bankB$age_group[i] = 'Thirties'} 
-  else if (bankB$age[i] >= 40 & bankB$age[i] <= 49){bankB$age_group[i] = 'Forties'}
-  else if (bankB$age[i] >= 50 & bankB$age[i] <= 59){bankB$age_group[i] = 'Fifties'}
-  else if (bankB$age[i] >= 60 & bankB$age[i] <= 69){bankB$age_group[i] = 'Sixties'}
-  else if (bankB$age[i] >= 70 ){bankB$age_group[i] = 'Seniors'}
+  if (bankB$age[i] <= 19){bankB$age_group[i] = '10s & Under'} 
+  else if (bankB$age[i] >= 20 & bankB$age[i] <= 29){bankB$age_group[i] = '20s'} 
+  else if (bankB$age[i] >= 30 & bankB$age[i] <= 39){bankB$age_group[i] = '30s'} 
+  else if (bankB$age[i] >= 40 & bankB$age[i] <= 49){bankB$age_group[i] = '40s'}
+  else if (bankB$age[i] >= 50 & bankB$age[i] <= 59){bankB$age_group[i] = '50s'}
+  else if (bankB$age[i] >= 60 & bankB$age[i] <= 69){bankB$age_group[i] = '60s'}
+  else if (bankB$age[i] >= 70 ){bankB$age_group[i] = '70s & Above'}
 }
 
 # saving the data before replacing age_group with age
@@ -195,6 +197,29 @@ print(paste('Area under the Curve for Tree Model (oldCust)',oldCust_treeAUC))
 
 
 
+#########################   Naive Bayes Model (oldCust)   #########################
+
+
+library(e1071)
+
+oldCust_nb<-naiveBayes(y ~.,data = oldCust_train)
+
+oldCust_nbResult <- predict(oldCust_nb, oldCust_test)
+oldCust_nbError  <- mean(oldCust_nbResult != oldCust_test$y)
+print(paste('Accuracy for Naive Bayes Model (oldCust)',1-oldCust_nbError))
+#Accuracy = 78.56%
+
+library(ROCR)
+
+oldCust_nbPred <- prediction(as.numeric(oldCust_nbResult), as.numeric(oldCust_test$y))
+oldCust_nbPerf <- performance(oldCust_nbPred, measure = "tpr", x.measure = "fpr")
+plot(oldCust_nbPerf)
+
+oldCust_nbAUC <- performance(oldCust_nbPred, measure = "auc")
+oldCust_nbAUC <- oldCust_nbAUC@y.values[[1]]
+print(paste('Area under the Curve for Naive Bayes Model (oldCust)',oldCust_nbAUC))
+#Area under Curve = 79.03%
+
 
 
 #########################                      #########################
@@ -334,4 +359,82 @@ newCust_treeAUC <- performance(newCust_treePred, measure = "auc")
 newCust_treeAUC <- newCust_treeAUC@y.values[[1]]
 print(paste('Area under the Curve for Tree Model (newCust)',newCust_treeAUC))
 #Area under Curve = 76.54%
+
+
+
+#########################   Naive Bayes Model (newCust)   #########################
+
+
+library(e1071)
+
+newCust_nb<-naiveBayes(y ~.,data = newCust_train)
+
+newCust_nbResult <- predict(newCust_nb, newCust_test)
+newCust_nbError  <- mean(newCust_nbResult != newCust_test$y)
+print(paste('Accuracy for Naive Bayes Model (newCust)',1-newCust_nbError))
+#Accuracy = 78.09%
+
+library(ROCR)
+
+newCust_nbPred <- prediction(as.numeric(newCust_nbResult), as.numeric(newCust_test$y))
+newCust_nbPerf <- performance(newCust_nbPred, measure = "tpr", x.measure = "fpr")
+plot(newCust_nbPerf)
+
+newCust_nbAUC <- performance(newCust_nbPred, measure = "auc")
+newCust_nbAUC <- newCust_nbAUC@y.values[[1]]
+print(paste('Area under the Curve for Naive Bayes Model (newCust)',newCust_nbAUC))
+#Area under Curve = 76.07%
+
+
+
+#########################                      #########################
+               #####         OTHER ANALYSIS          #####
+#########################                      #########################
+
+library(graphics)
+par(mar=c(1,1,1,1))
+
+# pcSuccess return the success rate of particular "x" variable from "ds" dataset
+pcSuccess<-function(ds,x)
+{
+  barplot(100* summary(ds[which(ds$y == 1),][,x]) / summary(ds[,x]))
+  return (100* summary(ds[which(ds$y == 1),][,x]) / summary(ds[,x]))
+}
+
+#age
+pcSuccess(oldCust_com,1)
+pcSuccess(newCust_com,1)
+
+#job
+pcSuccess(oldCust_com,2)
+pcSuccess(newCust_com,2)
+
+#marital
+pcSuccess(oldCust_com,3)
+pcSuccess(newCust_com,3)
+
+#education (default) 
+pcSuccess(oldCust_com,4)
+pcSuccess(newCust_com,4)
+
+#housing 
+pcSuccess(oldCust_com,6)
+pcSuccess(newCust_com,5)
+
+#loan
+pcSuccess(oldCust_com,7)
+pcSuccess(newCust_com,6)
+
+#contact
+pcSuccess(oldCust_com,8)
+pcSuccess(newCust_com,7)
+
+#month day_of_week
+pcSuccess(oldCust_com,9)
+pcSuccess(newCust_com,8)
+
+#day_of_week
+pcSuccess(oldCust_com,10)
+pcSuccess(newCust_com,9)
+
 
